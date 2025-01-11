@@ -1,0 +1,199 @@
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import PokemonCard from "../components/PokemonCard";
+import axios from "axios";
+
+const Tipos = () => {
+  const [tipos, setTipos] = useState([]);
+  const [pokemon, setPokemon] = useState([]);
+  const [carregando, setCarregando] = useState(false);
+  const [tipoSelecionado, setTipoSelecionado] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const [temMaisPokemon, setTemMaisPokemon] = useState(true);
+
+  const router = useRouter();
+
+  const handleClick = (id) => {
+    router.push(`/pokemon/${id}`);
+  };
+
+  const carregarTipos = async () => {
+    try {
+      const resposta = await axios.get("https://pokemon.danielpimentel.com.br/v1/tipos");
+      if (!resposta.data.erro) {
+        setTipos(resposta.data.tipos);
+        const tipoPadrao = "normal"; // Define o tipo padrão
+        if (resposta.data.tipos.some((tipo) => tipo.nome === tipoPadrao)) {
+          carregarPokemonPorTipo(tipoPadrao); // Carrega os Pokémon do tipo padrão
+        }
+      } else {
+        console.error(resposta.data.msg);
+      }
+    } catch (erro) {
+      console.error("Erro ao carregar tipos:", erro);
+    }
+  };
+
+  const carregarPokemonPorTipo = async (nomeDoTipo, paginaAtual = 1) => {
+    setCarregando(true);
+    setPokemon([]);
+    setTipoSelecionado(nomeDoTipo);
+    setPagina(paginaAtual);
+
+    try {
+      const resposta = await axios.get(
+        `https://pokemon.danielpimentel.com.br/v1/pokemon/tipo/${nomeDoTipo}/20/${paginaAtual}`
+      );
+      if (!resposta.data.erro) {
+        setPokemon(resposta.data.pokemon);
+
+        if (resposta.data.pokemon.length < 20) {
+          setTemMaisPokemon(false);
+        } else {
+          setTemMaisPokemon(true);
+        }
+      } else {
+        console.error(resposta.data.msg);
+        setTemMaisPokemon(false);
+      }
+    } catch (erro) {
+      console.error("Erro ao carregar Pokémon do tipo:", erro);
+      setTemMaisPokemon(false);
+    }
+    setCarregando(false);
+  };
+
+  useEffect(() => {
+    carregarTipos();
+  }, []);
+
+  const mudarPagina = (direcao) => {
+    const novaPagina = pagina + direcao;
+    if (novaPagina < 1) return;
+
+    carregarPokemonPorTipo(tipoSelecionado, novaPagina);
+  };
+
+  return (
+    <div>
+      <h1>Tipos de Pokémon</h1>
+      {carregando && <p>Carregando...</p>}
+      {!carregando && (
+        <div>
+          <div className="tipos">
+            {tipos.map((tipo) => (
+              <button
+                key={tipo.id}
+                onClick={() => carregarPokemonPorTipo(tipo.nome)}
+                className={tipoSelecionado === tipo.nome ? "selecionado" : ""}
+              >
+                {tipo.nome}
+              </button>
+            ))}
+          </div>
+
+          <div className="pokemon-list">
+            {pokemon.length > 0 ? (
+              pokemon.map((poke) => (
+                <div
+                  key={poke.numero}
+                  className="pokemon-card"
+                  onClick={() => handleClick(poke.numero)}
+                >
+                  <PokemonCard
+                    numero={poke.numero}
+                    nome={poke.nome}
+                    img={poke.img}
+                    favoritado={poke.favoritado}
+                  />
+                </div>
+              ))
+            ) : (
+              tipoSelecionado && !carregando && <p>Nenhum Pokémon encontrado.</p>
+            )}
+          </div>
+
+          {tipoSelecionado && (
+            <div className="pagination">
+              <button onClick={() => mudarPagina(-1)} disabled={pagina === 1}>
+                Anterior
+              </button>
+              <span>Página {pagina}</span>
+              <button onClick={() => mudarPagina(1)} disabled={!temMaisPokemon}>
+                Próximo
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <style jsx>{`
+        .tipos {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+        .tipos button {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 4px;
+          background-color: #0070f3;
+          color: white;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+        }
+        .tipos button.selecionado {
+          background-color: #005bb5;
+        }
+        .tipos button:hover {
+          background-color: #005bb5;
+        }
+        .pokemon-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 16px;
+        }
+        .pokemon-card {
+          text-align: center;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 10px;
+          background-color: #f9f9f9;
+          cursor: pointer;
+        }
+        .pokemon-card img {
+          width: 100px;
+          height: auto;
+        }
+        .pokemon-card p {
+          margin: 10px 0 0;
+          font-size: 14px;
+          font-weight: bold;
+          text-transform: capitalize;
+        }
+        .pagination {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 20px;
+          margin-top: 20px;
+        }
+        .pagination button {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 4px;
+          background-color: #0070f3;
+          color: white;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+        }
+        .pagination button[disabled] {
+          background-color: #ccc;
+          cursor: not-allowed;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default Tipos;
