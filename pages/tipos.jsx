@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import PokemonCard from "../components/PokemonCard";
@@ -6,6 +7,7 @@ import axios from "axios";
 const Tipos = () => {
   const [tipos, setTipos] = useState([]);
   const [pokemon, setPokemon] = useState([]);
+  const [favoritos, setFavoritos] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [tipoSelecionado, setTipoSelecionado] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -17,14 +19,25 @@ const Tipos = () => {
     router.push(`/pokemon/${id}`);
   };
 
+  const carregarFavoritos = async () => {
+    try {
+      const resposta = await axios.get("http://localhost:3000/api/favoritar");
+      if (!resposta.data.erro) {
+        setFavoritos(resposta.data.favoritos.map((f) => f.pokemon_id));
+      }
+    } catch (erro) {
+      console.error("Erro ao carregar favoritos:", erro);
+    }
+  };
+
   const carregarTipos = async () => {
     try {
       const resposta = await axios.get("https://pokemon.danielpimentel.com.br/v1/tipos");
       if (!resposta.data.erro) {
         setTipos(resposta.data.tipos);
-        const tipoPadrao = "normal"; // Define o tipo padrão
+        const tipoPadrao = "normal"; 
         if (resposta.data.tipos.some((tipo) => tipo.nome === tipoPadrao)) {
-          carregarPokemonPorTipo(tipoPadrao); // Carrega os Pokémon do tipo padrão
+          carregarPokemonPorTipo(tipoPadrao); 
         }
       } else {
         console.error(resposta.data.msg);
@@ -64,6 +77,7 @@ const Tipos = () => {
   };
 
   useEffect(() => {
+    carregarFavoritos();
     carregarTipos();
   }, []);
 
@@ -104,7 +118,7 @@ const Tipos = () => {
                     numero={poke.numero}
                     nome={poke.nome}
                     img={poke.img}
-                    favoritado={poke.favoritado}
+                    favoritado={favoritos.includes(poke.numero)}
                   />
                 </div>
               ))

@@ -2,8 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/tipos": "pages/tipos.js",
   "/pokemon/[id]": "pages/pokemon/[id].js",
+  "/favoritos": "pages/favoritos.js",
+  "/tipos": "pages/tipos.js",
+  "/api/favoritar": "pages/api/favoritar.js",
   "/regioes": "pages/regioes.js",
-  "/favoritos": "pages/favoritos.js"
+  "/api/pokemon/[id]": "pages/api/pokemon/[id].js"
 }

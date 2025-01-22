@@ -1,20 +1,33 @@
+'use client';
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router"; // Importação do roteador
+import { useRouter } from "next/router"; 
 import PokemonCard from "../components/PokemonCard";
 import axios from "axios";
 
 const Regioes = () => {
   const [regioes, setRegioes] = useState([]);
   const [pokemon, setPokemon] = useState([]);
+  const [favoritos, setFavoritos] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [regiaoSelecionada, setRegiaoSelecionada] = useState("");
   const [pagina, setPagina] = useState(1);
   const [temMaisPokemon, setTemMaisPokemon] = useState(true);
 
-  const router = useRouter(); // Instância do roteador
+  const router = useRouter(); 
 
   const handleClick = (id) => {
-    router.push(`/pokemon/${id}`); // Redireciona para a rota de detalhes do Pokémon
+    router.push(`/pokemon/${id}`); 
+  };
+
+  const carregarFavoritos = async () => {
+    try {
+      const resposta = await axios.get("http://localhost:3000/api/favoritar");
+      if (!resposta.data.erro) {
+        setFavoritos(resposta.data.favoritos.map((f) => f.pokemon_id));
+      }
+    } catch (erro) {
+      console.error("Erro ao carregar favoritos:", erro);
+    }
   };
 
   const carregarRegioes = async () => {
@@ -23,7 +36,6 @@ const Regioes = () => {
       if (!resposta.data.erro) {
         setRegioes(resposta.data.regioes);
 
-        // Define a região "Kanto" como padrão, se disponível
         const regiaoPadrao = resposta.data.regioes.find((regiao) => regiao.nome.toLowerCase() === "kanto");
         if (regiaoPadrao) {
           carregarPokemonPorRegiao(regiaoPadrao.nome);
@@ -49,7 +61,6 @@ const Regioes = () => {
       if (!resposta.data.erro) {
         setPokemon(resposta.data.pokemon);
 
-        // Verifica se ainda há mais Pokémon para listar
         if (resposta.data.pokemon.length < 20) {
           setTemMaisPokemon(false);
         } else {
@@ -67,13 +78,13 @@ const Regioes = () => {
   };
 
   useEffect(() => {
+    carregarFavoritos();
     carregarRegioes();
   }, []);
 
   const mudarPagina = (direcao) => {
     const novaPagina = pagina + direcao;
 
-    // Não permite voltar para uma página antes da primeira
     if (novaPagina < 1) return;
 
     carregarPokemonPorRegiao(regiaoSelecionada, novaPagina);
@@ -103,13 +114,13 @@ const Regioes = () => {
                 <div
                   key={poke.numero}
                   className="pokemon-card"
-                  onClick={() => handleClick(poke.numero)} // Adicionado redirecionamento
+                  onClick={() => handleClick(poke.numero)} 
                 >
                   <PokemonCard
                     numero={poke.numero}
                     nome={poke.nome}
                     img={poke.img}
-                    favoritado={poke.favoritado} // Supondo que a API retorne essa informação
+                    favoritado={favoritos.includes(poke.numero)}
                   />
                 </div>
               ))

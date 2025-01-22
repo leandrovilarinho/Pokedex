@@ -1,5 +1,6 @@
+'use client';
 import React from "react";
-import { FaStar, FaRegStar } from "react-icons/fa"; // Ícones para favoritado/não favoritado
+import { FaStar, FaRegStar } from "react-icons/fa"; 
 
 const PokemonCard = ({ numero, nome, img, favoritado }) => {
   return (

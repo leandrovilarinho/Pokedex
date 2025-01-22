@@ -1,58 +1,60 @@
+'use client';
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { FaHeart, FaRegHeart } from "react-icons/fa"; // Ícones para favorito
-import db from "../../lib/db"; // Simulação do banco de dados
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 
 const PokemonDetalhes = () => {
   const router = useRouter();
   const { id } = router.query;
 
   const [pokemon, setPokemon] = useState(null);
+  const [carregando, setCarregando] = useState(true);
   const [favoritado, setFavoritado] = useState(false);
-
-  // Função para buscar informações do Pokémon
-  const buscarPokemon = async (pokemonId) => {
-    try {
-      const resposta = await axios.get(
-        `https://pokemon.danielpimentel.com.br/v1/pokemon/numero/${pokemonId}`
-      );
-      if (!resposta.data.erro) {
-        setPokemon(resposta.data.pokemon);
-
-        // Verifica no banco de dados se o Pokémon está favoritado
-        const favoritos = db.get("favoritos") || [];
-        setFavoritado(favoritos.includes(pokemonId));
-      } else {
-        console.error(resposta.data.msg);
-      }
-    } catch (erro) {
-      console.error("Erro ao buscar informações do Pokémon:", erro);
-    }
-  };
-
-  // Função para alternar o status de favorito
-  const alternarFavorito = () => {
-    const favoritos = db.get("favoritos") || [];
-    if (favoritado) {
-      // Remove dos favoritos
-      db.set("favoritos", favoritos.filter((fav) => fav !== id));
-      setFavoritado(false);
-    } else {
-      // Adiciona aos favoritos
-      db.set("favoritos", [...favoritos, id]);
-      setFavoritado(true);
-    }
-  };
 
   useEffect(() => {
     if (id) {
-      buscarPokemon(id);
+      carregarPokemon(id);
     }
   }, [id]);
 
-  if (!pokemon) {
+  const carregarPokemon = async (pokemonId) => {
+    try {
+      const resposta = await axios.get(`https://pokemon.danielpimentel.com.br/v1/pokemon/numero/${pokemonId}`);
+      if (!resposta.data.erro) {
+        setPokemon(resposta.data.pokemon);
+
+        // Verifica se o Pokémon está favoritado no backend
+        const favoritoResposta = await axios.get(`/api/pokemon/${pokemonId}`);
+        setFavoritado(favoritoResposta.data.favoritado);
+      } else {
+        console.error("Erro ao carregar Pokémon:", resposta.data.mensagem);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar Pokémon:", error);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const alternarFavorito = async () => {
+    try {
+      const resposta = await axios.post("/api/favoritar", {
+        id: pokemon.numero,
+        nome: pokemon.nome,
+      });
+      setFavoritado(resposta.data.favoritado);
+    } catch (erro) {
+      console.error("Erro ao atualizar favorito:", erro);
+    }
+  };  
+
+  if (carregando) {
     return <p>Carregando...</p>;
+  }
+
+  if (!pokemon) {
+    return <p>Pokémon não encontrado.</p>;
   }
 
   return (
